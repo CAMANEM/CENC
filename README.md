@@ -1,8 +1,6 @@
 # CENC
 CE4303 Operating Systems Project #2 - Pick&amp;Place CNC
 
-## Primer Dealine: Domingo 3 de noviembre tener completas las siguiente 4 secciones:
-
 ## Servidor-Cluster (Emanuel Marín)
 
 Crear un sistema distribuido con al menos 3 nodos (1 master y dos esclavos) utilizando OpenMPI. Para ello primero se harán pruebas con 3 ordenadores y luego se proborará el sistema con dos ordenadores y la Raspberry Pi como nodo master.
