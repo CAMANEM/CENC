@@ -57,7 +57,7 @@ Once the server is running, you can run the client. You must specify the XOR key
 
 ```bash
 gcc -o client client.c
-./client AA diagram1.jpg
+./client AA ../Images/diagram1.jpg
 ```
 
 The AA is the XOR key (in hexadecimal format) that the client will use for encryption.
