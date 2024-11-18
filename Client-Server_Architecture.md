@@ -57,7 +57,7 @@ Once the server is running, you can run the client. You must specify the XOR key
 
 ```bash
 gcc -o client client.c
-./client AA ../Images/diagram1.jpg
+./client AA ../Images/diagram1.png
 ```
 
 The AA is the XOR key (in hexadecimal format) that the client will use for encryption.
@@ -73,7 +73,7 @@ Encrypted image saved as 'encrypted_image.txt' and sent to the server
 The server will receive the encrypted image, decrypt it using the XOR key AA, and save the resulting image. It will display:
 
 ```bash
-Decrypted image saved as 'decrypted_image.jpg'
+Decrypted image saved as 'decrypted_image.png'
 ```
 
 ### 4. Verify the Image Files
@@ -82,4 +82,4 @@ original_image.txt: Contains the hexadecimal representation of the original imag
 
 encrypted_image.txt: Contains the hexadecimal representation of the encrypted image data.
 
-received_image.jpg: The decrypted image saved by the server.
+received_image.png: The decrypted image saved by the server.

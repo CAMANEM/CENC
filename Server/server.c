@@ -65,8 +65,8 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Open the file to save the received image
-    file = fopen("decrypted_image.jpg", "wb");
+    // Open the file to save the decrypted image
+    file = fopen("../Images/decrypted_image.png", "wb");
     if (file == NULL) {
         perror("Error opening the file");
         close(new_socket);
@@ -74,14 +74,14 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Receive the image in chunks
+    // Receive the image in chunks, decrypt, and save it
     ssize_t bytes_read;
     while ((bytes_read = read(new_socket, buffer, BUFFER_SIZE)) > 0) {
         xor_decrypt(buffer, bytes_read, XOR_KEY);  // Decrypt the received data
         fwrite(buffer, sizeof(char), bytes_read, file);
     }
 
-    printf("Decrypted image saved as 'decrypted_image.jpg'\n");
+    printf("Decrypted image saved as 'decrypted_image.png'\n");
 
     // Close the file and sockets
     fclose(file);

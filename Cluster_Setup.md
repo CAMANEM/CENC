@@ -116,7 +116,7 @@ Change its permissions:
 
 ```bash
 sudo chown nobody:nogroup /home/pipo/Desktop/sharedcenc
-sudo chmod 777 /home/pipo/Desktop/sharedcenc
+sudo chmod -R 777 /home/pipo/Desktop/sharedcenc
 ```
 
 Edit /etc/exports:
