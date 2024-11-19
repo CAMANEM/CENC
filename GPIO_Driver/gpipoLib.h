@@ -1,13 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-FILE *file_ptr;  // Puntero al archivo
-char buffer[2058];
-int x_steps;
-int y_steps;
-
-
 int open_file(const char *path);
 
 int write_to_file(const char *text);

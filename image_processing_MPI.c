@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 typedef struct {
     int x;
@@ -167,9 +168,15 @@ Coordenada *concatenate_coords(Coordenada *puntos1, int count1, Coordenada *punt
 
 
 int main(int argc, char **argv) {
-    const char *ruta_imagen = "images/PCB1000x1000.png";
+    if (argc < 2) {
+        fprintf(stderr, "Uso: %s <ruta_imagen>\n", argv[0]);
+        return 1;
+    }
+    
+    // Leer la ruta de la imagen
+    const char *ruta_imagen = argv[1];
+    
     int rank, size;
-
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -181,10 +188,6 @@ int main(int argc, char **argv) {
     // Definir el rango de trabajo para cada proceso
     int start, finish;
     if (rank == 0) {       // Nodo maestro
-        start = 0;
-        finish = 333;
-        coords = detect_color_clusters(ruta_imagen, &puntos_count, &coord_count, start, finish);
-
         // Recibir coords1 y coords2 de otros nodos
         int coords1_count, coords2_count;
         Coordenada *coords1 = NULL, *coords2 = NULL;
@@ -200,10 +203,9 @@ int main(int argc, char **argv) {
         MPI_Recv(coords2, coords2_count * sizeof(Coordenada), MPI_BYTE, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         // Concatenar resultados en el nodo maestro
-        Coordenada *temp_coords = concatenate_coords(coords, coord_count, coords1, coords1_count);
-        Coordenada *all_coords = concatenate_coords(temp_coords, coord_count + coords1_count, coords2, coords2_count);
+        Coordenada *all_coords = concatenate_coords(coords1, coords1_count, coords2, coords2_count);
 
-        int total_coord_count = coord_count + coords1_count + coords2_count;
+        int total_coord_count = coords1_count + coords2_count;
         Coordenada *puntos = get_points(all_coords, total_coord_count, &puntos_count);
 
         // Postprocesamiento como en el código original
@@ -217,40 +219,78 @@ int main(int argc, char **argv) {
                    puntos_fisicos[i].type == 0 ? "Resistencia" :
                    puntos_fisicos[i].type == 1 ? "Capacitor" : "Diodo");
         }
+        
+        
+        
+	printf("Agregar logica de continue con biblioteca \n");
+	
+		// Abrir el archivo para escribir
+	FILE *archivo = fopen("resultados.txt", "w");
+	if (archivo == NULL) {
+	    fprintf(stderr, "Error al abrir el archivo para escribir.\n");
+	    return 1;
+	}
 
+	// Mostrar resultados y escribir en el archivo
+	for (int i = 0; i < medios_count; i++) {
+	    // Mostrar en la terminal
+	    printf("Punto %d físico (stepsx, stepsy): (%d, %d), Tipo: %s\n", 
+		   i + 1, puntos_fisicos[i].x, puntos_fisicos[i].y,
+		   puntos_fisicos[i].type == 0 ? "Resistencia" :
+		   puntos_fisicos[i].type == 1 ? "Capacitor" : "Diodo");
+
+	    // Escribir en el archivo
+	    fprintf(archivo, "Punto %d físico (stepsx, stepsy): (%d, %d), Tipo: %s\n",
+		    i + 1, puntos_fisicos[i].x, puntos_fisicos[i].y,
+		    puntos_fisicos[i].type == 0 ? "Resistencia" :
+		    puntos_fisicos[i].type == 1 ? "Capacitor" : "Diodo");
+	}
+
+	// Cerrar el archivo
+	fclose(archivo);
+
+	printf("Resultados guardados en 'resultados.txt'.\n");
+	
+	
+	
         // Liberar memoria en el nodo maestro
         free(coords1);
         free(coords2);
-        free(temp_coords);
         free(all_coords);
         free(puntos);
         free(puntos_medios);
         free(puntos_fisicos);
+        
+        
 
     } else if (rank == 1) {  // Nodo 1
-        start = 333;
-        finish = 666;
+        start = 0;
+        finish = 499;
         Coordenada *coords1 = detect_color_clusters(ruta_imagen, &puntos_count, &coord_count, start, finish);
 
         // Enviar resultado al nodo maestro
         MPI_Send(&coord_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        sleep(5);
         MPI_Send(coords1, coord_count * sizeof(Coordenada), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
 
         free(coords1);
 
     } else if (rank == 2) {  // Nodo 2
-        start = 666;
+        start = 499;
         finish = 1000;
         Coordenada *coords2 = detect_color_clusters(ruta_imagen, &puntos_count, &coord_count, start, finish);
 
         // Enviar resultado al nodo maestro
         MPI_Send(&coord_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        sleep(5);
         MPI_Send(coords2, coord_count * sizeof(Coordenada), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
 
         free(coords2);
+
     }
 
     MPI_Finalize();
+    
     return 0;
 }
 
@@ -258,8 +298,8 @@ int main(int argc, char **argv) {
 
 
 // Compilación y ejecutar con mpi
-//mpicc -o image_processing image_processing.c `pkg-config --cflags --libs MagickCore`
-//mpirun -np 3 ./image_processing
+//mpicc -o ip_MPI image_processing_MPI.c `pkg-config --cflags --libs MagickCore`
+//mpirun -hostfile hosts ./ip_MPI Images/decrypted_image.png
 
-//Instalación de la librería
+// Instalación de la biblioteca
 //sudo apt install pkgconf libmagickcore-dev

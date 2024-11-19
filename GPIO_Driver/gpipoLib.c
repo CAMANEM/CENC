@@ -1,5 +1,19 @@
 #include "gpipoLib.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+FILE *file_ptr;  // Puntero al archivo
+char buffer[2058];
+int x_steps;
+int y_steps;
+
+typedef enum {
+		steppers_OFF = '0',
+		stepperY_ON = '1'
+} command;
 
 /*
 gcc -o gpipoLib gpipoLib.c
@@ -54,7 +68,7 @@ void decode_movements(int coords[], int width, int height) {
 char step_to_write(int value) {
     switch (value) {
     	// 	OFF
-        case 0: return '0';
+        case 0: return steppers_OFF;
         //	X Axis
         case 1: return '1';
         case 2: return '2';
@@ -68,11 +82,11 @@ char step_to_write(int value) {
         //	Z Axis
         case 9: return '9';
         case 10: return 'a';
-	case 11: return 'b';
-	case 12: return 'c';
-	//	Picker off/on
-	case 13: return 'd';
-	case 14: return 'e';
+        case 11: return 'b';
+        case 12: return 'c';
+        //	Picker off/on
+        case 13: return 'd';
+        case 14: return 'e';
         default:
             printf("No matching case\n");
             return '?';  // Default return if no match
@@ -158,6 +172,7 @@ void set_pump(int action){
     // TURN ON
     if(action == 1){
         strncat(buffer, "e", 1);  // Appends one character
+        usleep(250000);
     }
 }
 
@@ -167,6 +182,8 @@ void close_file() {
         fclose(file_ptr);
         printf("Archivo cerrado exitosamente.\n");
     }
+            printf("Sí funciona bro, todo tranqui.\n");
+
 }
 
 void put_component(int x, int y){
@@ -177,12 +194,14 @@ void put_component(int x, int y){
     if (open_file(path) != 0) {
         //error
     }
+    set_pump(1);
     pick_up(100, 0);
     
     move_x_axis(x);
     move_y_axis(y);
     
     pick_up(50, 1);
+    set_pump(0);
     pick_up(100, 0);
     
     return_to_origin();

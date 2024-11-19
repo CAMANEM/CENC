@@ -19,38 +19,55 @@ static struct cdev my_device;
 #define DRIVER_NAME "gpipoDriver"
 #define DRIVER_CLASS "MyModuleClass"
 
+/*
+make
+sudo insmod gpipoDriver.ko
+dmesg | grep gpipoDriver
+sudo chmod 666 /dev/gpipoDriver
+echo -n "123456789abcded0" > /dev/gpipoDriver
+* 
+para eliminar:
+sudo rmmod gpipoDriver
+lsmod | grep gpipoDriver
+ * 
+ */
+
 /*_______________________________GPIO DEFINITIONS____________________________________*/
 
-// 4, 17, 27, 22
-
-#define Stepper1In_1 516
-#define Stepper1In_2 529
-#define Stepper1In_3 539
-#define Stepper1In_4 534
-
-// 5, 6, 13, 19
-
-#define Stepper2In_1 517
-#define Stepper2In_2 518
-#define Stepper2In_3 525
-#define Stepper2In_4 531
-
-// 26, 21, 20, 16
-// deberia ser 16, 20, 21, 26
+// StepperMotor (with Floor), axis Y:
 /*
-#define Stepper3In_1 538
-#define Stepper3In_2 533
-#define Stepper3In_3 532
-#define Stepper3In_4 528
+#define Stepper1In_1 516 // GPIO4
+#define Stepper1In_2 529 // GPIO17
+#define Stepper1In_3 539 // GPIO27
+#define Stepper1In_4 534 // GPIO22
 */
+static int stepperYPins[4] = {516, 529, 539, 534};
+
+// StepperMotor, axis X
+
+/*
+#define Stepper2In_1 517 // GPIO5
+#define Stepper2In_2 518 // GPIO6
+#define Stepper2In_3 525 // GPIO13
+#define Stepper2In_4 531 // GPIO19
+*/
+static int stepperXPins[4] = {517, 518, 525, 531};
+
+// mini StepperMotor, axis Z:
+
+/*
 #define Stepper3In_1 528 // GPIO16
 #define Stepper3In_2 532 // GPIO20
 #define Stepper3In_3 533 // GPIO21
 #define Stepper3In_4 538 // GPIO26
+*/
 
-// 23
+static int stepperZPins[4] = {528, 532, 533, 538};
 
-#define Picker 535
+// Picker control pin
+
+#define Picker 535 // GPIO23
+
 
 /**
  * @brief Read data out of the buffer
@@ -75,6 +92,60 @@ static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, l
 	return delta;
 }
 
+static void turnOffSteppers(void){
+	
+	//stepper1
+	gpio_set_value(stepperYPins[0], 0);
+	gpio_set_value(stepperYPins[1], 0);
+	gpio_set_value(stepperYPins[2], 0);
+	gpio_set_value(stepperYPins[3], 0);
+			
+	//stepper2
+	gpio_set_value(stepperXPins[0], 0);
+	gpio_set_value(stepperXPins[1], 0);
+	gpio_set_value(stepperXPins[2], 0);
+	gpio_set_value(stepperXPins[3], 0);
+			
+	//stepper3
+	gpio_set_value(stepperZPins[0], 0);
+	gpio_set_value(stepperZPins[1], 0);
+	gpio_set_value(stepperZPins[2], 0);
+	gpio_set_value(stepperZPins[3], 0);
+}
+
+static void rotation1(int stepperPins[4]){
+	
+	gpio_set_value(stepperPins[0], 1);
+	gpio_set_value(stepperPins[1], 0);
+	gpio_set_value(stepperPins[2], 1);
+	gpio_set_value(stepperPins[3], 0);
+}
+
+static void rotation2(int stepperPins[4]){
+	
+	gpio_set_value(stepperPins[0], 0);
+	gpio_set_value(stepperPins[1], 1);
+	gpio_set_value(stepperPins[2], 1);
+	gpio_set_value(stepperPins[3], 0);
+}
+
+static void rotation3(int stepperPins[4]){
+	
+	gpio_set_value(stepperPins[0], 0);
+	gpio_set_value(stepperPins[1], 1);
+	gpio_set_value(stepperPins[2], 0);
+	gpio_set_value(stepperPins[3], 1);
+}
+
+static void rotation4(int stepperPins[4]){
+	
+	gpio_set_value(stepperPins[0], 1);
+	gpio_set_value(stepperPins[1], 0);
+	gpio_set_value(stepperPins[2], 0);
+	gpio_set_value(stepperPins[3], 1);
+}
+
+
 /**
  * @brief Write data to buffer
  */
@@ -88,110 +159,57 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
 	/* Copy data to user */
 	not_copied = copy_from_user(&value, user_buffer, to_copy);
 
-	/* Setting the LED */
 	switch(value) {
 		case '0':
-		//stepper1
-			gpio_set_value(Stepper1In_1, 0);
-			gpio_set_value(Stepper1In_2, 0);
-			gpio_set_value(Stepper1In_3, 0);
-			gpio_set_value(Stepper1In_4, 0);
-			
-		//stepper2
-			gpio_set_value(Stepper2In_1, 0);
-			gpio_set_value(Stepper2In_2, 0);
-			gpio_set_value(Stepper2In_3, 0);
-			gpio_set_value(Stepper2In_4, 0);
-			
-		//stepper3
-			gpio_set_value(Stepper3In_1, 0);
-			gpio_set_value(Stepper3In_2, 0);
-			gpio_set_value(Stepper3In_3, 0);
-			gpio_set_value(Stepper3In_4, 0);
+			turnOffSteppers();
 			msleep(10);
 			break;
 		case '1':
-			gpio_set_value(Stepper1In_1, 1);
-			gpio_set_value(Stepper1In_2, 0);
-			gpio_set_value(Stepper1In_3, 1);
-			gpio_set_value(Stepper1In_4, 0);
+			rotation1(stepperYPins);
 			msleep(10);
 			break;
 		case '2':
-			gpio_set_value(Stepper1In_1, 0);
-			gpio_set_value(Stepper1In_2, 1);
-			gpio_set_value(Stepper1In_3, 1);
-			gpio_set_value(Stepper1In_4, 0);
+			rotation2(stepperYPins);
 			msleep(10);
 			break;
 		case '3':
-			gpio_set_value(Stepper1In_1, 0);
-			gpio_set_value(Stepper1In_2, 1);
-			gpio_set_value(Stepper1In_3, 0);
-			gpio_set_value(Stepper1In_4, 1);
+			rotation3(stepperYPins);
 			msleep(10);
 			break;
 		case '4':
-			gpio_set_value(Stepper1In_1, 1);
-			gpio_set_value(Stepper1In_2, 0);
-			gpio_set_value(Stepper1In_3, 0);
-			gpio_set_value(Stepper1In_4, 1);
+			rotation4(stepperYPins);
 			msleep(10);
 			break;
 		case '5':
-			gpio_set_value(Stepper2In_1, 1);
-			gpio_set_value(Stepper2In_2, 0);
-			gpio_set_value(Stepper2In_3, 1);
-			gpio_set_value(Stepper2In_4, 0);
+			rotation1(stepperXPins);
 			msleep(20);
 			break;
 		case '6':
-			gpio_set_value(Stepper2In_1, 0);
-			gpio_set_value(Stepper2In_2, 1);
-			gpio_set_value(Stepper2In_3, 1);
-			gpio_set_value(Stepper2In_4, 0);
+			rotation2(stepperXPins);
 			msleep(20);
 			break;
 		case '7':
-			gpio_set_value(Stepper2In_1, 0);
-			gpio_set_value(Stepper2In_2, 1);
-			gpio_set_value(Stepper2In_3, 0);
-			gpio_set_value(Stepper2In_4, 1);
+			rotation3(stepperXPins);
 			msleep(20);
 			break;
 		case '8':
-			gpio_set_value(Stepper2In_1, 1);
-			gpio_set_value(Stepper2In_2, 0);
-			gpio_set_value(Stepper2In_3, 0);
-			gpio_set_value(Stepper2In_4, 1);
+			rotation4(stepperXPins);
 			msleep(20);
 			break;
 		case '9':
-			gpio_set_value(Stepper3In_1, 1);
-			gpio_set_value(Stepper3In_2, 0);
-			gpio_set_value(Stepper3In_3, 1);
-			gpio_set_value(Stepper3In_4, 0);
+			rotation1(stepperZPins);
 			msleep(5);
 			break;
 		case 'a':
-			gpio_set_value(Stepper3In_1, 0);
-			gpio_set_value(Stepper3In_2, 1);
-			gpio_set_value(Stepper3In_3, 1);
-			gpio_set_value(Stepper3In_4, 0);
+			rotation2(stepperZPins);
 			msleep(5);
 			break;
 		case 'b':
-			gpio_set_value(Stepper3In_1, 0);
-			gpio_set_value(Stepper3In_2, 1);
-			gpio_set_value(Stepper3In_3, 0);
-			gpio_set_value(Stepper3In_4, 1);
+			rotation3(stepperZPins);
 			msleep(5);
 			break;
 		case 'c':
-			gpio_set_value(Stepper3In_1, 1);
-			gpio_set_value(Stepper3In_2, 0);
-			gpio_set_value(Stepper3In_3, 0);
-			gpio_set_value(Stepper3In_4, 1);
+			rotation4(stepperZPins);
 			msleep(5);
 			break;
 		
@@ -278,122 +296,122 @@ static int __init ModuleInit(void) {
 
 
 	/* GPIO Stepper1In_1 init */
-	if(gpio_request(Stepper1In_1, "rpi-gpio-Stepper1In_1")) {
+	if(gpio_request(stepperYPins[0], "rpi-gpio-Stepper1In_1")) {
 		printk("Can not allocate GPIO Stepper1In_1\n");
 		goto AddError;
 	}
 	/* Set GPIO Stepper1In_1 direction */
-	if(gpio_direction_output(Stepper1In_1, 0)) {
+	if(gpio_direction_output(stepperYPins[0], 0)) {
 		printk("Can not set GPIO Stepper1In_1 to output!\n");
 		goto GpioStepper1In_1Error;
 	}
 
 	/* GPIO Stepper1In_2 init */
-	if(gpio_request(Stepper1In_2, "rpi-gpio-Stepper1In_2")) {
+	if(gpio_request(stepperYPins[1], "rpi-gpio-Stepper1In_2")) {
 		printk("Can not allocate GPIO Stepper1In_2\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper1In_2, 0)) {
+	if(gpio_direction_output(stepperYPins[1], 0)) {
 		printk("Can not set GPIO Stepper1In_2 to output!\n");
 		goto GpioStepper1In_2Error;
 	}
 
 	/* GPIO Stepper1In_3 init */
-	if(gpio_request(Stepper1In_3, "rpi-gpio-Stepper1In_3")) {
+	if(gpio_request(stepperYPins[2], "rpi-gpio-Stepper1In_3")) {
 		printk("Can not allocate GPIO Stepper1In_3\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper1In_3, 0)) {
+	if(gpio_direction_output(stepperYPins[2], 0)) {
 		printk("Can not set GPIO Stepper1In_3 to output!\n");
 		goto GpioStepper1In_3Error;
 	}
 
 	/* GPIO Stepper1In_4 init */
-	if(gpio_request(Stepper1In_4, "rpi-gpio-Stepper1In_4")) {
+	if(gpio_request(stepperYPins[3], "rpi-gpio-Stepper1In_4")) {
 		printk("Can not allocate GPIO Stepper1In_4\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper1In_4, 0)) {
+	if(gpio_direction_output(stepperYPins[3], 0)) {
 		printk("Can not set GPIO Stepper1In_4 to output!\n");
 		goto GpioStepper1In_4Error;
 	}
 
 	/* GPIO Stepper2In_1 init */
-	if(gpio_request(Stepper2In_1, "rpi-gpio-Stepper2In_1")) {
+	if(gpio_request(stepperXPins[0], "rpi-gpio-Stepper2In_1")) {
 		printk("Can not allocate GPIO Stepper2In_1\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper2In_1, 0)) {
+	if(gpio_direction_output(stepperXPins[0], 0)) {
 		printk("Can not set GPIO Stepper2In_1 to output!\n");
 		goto GpioStepper2In_1Error;
 	}
 
 	/* GPIO Stepper2In_2 init */
-	if(gpio_request(Stepper2In_2, "rpi-gpio-Stepper2In_2")) {
+	if(gpio_request(stepperXPins[1], "rpi-gpio-Stepper2In_2")) {
 		printk("Can not allocate GPIO Stepper2In_2\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper2In_2, 0)) {
+	if(gpio_direction_output(stepperXPins[1], 0)) {
 		printk("Can not set GPIO Stepper2In_2 to output!\n");
 		goto GpioStepper2In_2Error;
 	}
 
 	/* GPIO Stepper2In_3 init */
-	if(gpio_request(Stepper2In_3, "rpi-gpio-Stepper2In_3")) {
+	if(gpio_request(stepperXPins[2], "rpi-gpio-Stepper2In_3")) {
 		printk("Can not allocate GPIO Stepper2In_3\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper2In_3, 0)) {
+	if(gpio_direction_output(stepperXPins[2], 0)) {
 		printk("Can not set GPIO Stepper2In_3 to output!\n");
 		goto GpioStepper2In_3Error;
 	}
 
 	/* GPIO Stepper2In_4 init */
-	if(gpio_request(Stepper2In_4, "rpi-gpio-Stepper2In_4")) {
+	if(gpio_request(stepperXPins[3], "rpi-gpio-Stepper2In_4")) {
 		printk("Can not allocate GPIO Stepper2In_4\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper2In_4, 0)) {
+	if(gpio_direction_output(stepperXPins[3], 0)) {
 		printk("Can not set GPIO Stepper2In_4 to output!\n");
 		goto GpioStepper2In_4Error;
 	}
 
 	/* GPIO Stepper3In_1 init */
-	if(gpio_request(Stepper3In_1, "rpi-gpio-Stepper3In_1")) {
+	if(gpio_request(stepperZPins[0], "rpi-gpio-Stepper3In_1")) {
 		printk("Can not allocate GPIO Stepper3In_1\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper3In_1, 0)) {
+	if(gpio_direction_output(stepperZPins[0], 0)) {
 		printk("Can not set GPIO Stepper3In_1 to output!\n");
 		goto GpioStepper3In_1Error;
 	}
 
 	/* GPIO Stepper3In_2 init */
-	if(gpio_request(Stepper3In_2, "rpi-gpio-Stepper3In_2")) {
+	if(gpio_request(stepperZPins[1], "rpi-gpio-Stepper3In_2")) {
 		printk("Can not allocate GPIO Stepper3In_2\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper3In_2, 0)) {
+	if(gpio_direction_output(stepperZPins[1], 0)) {
 		printk("Can not set GPIO Stepper3In_2 to output!\n");
 		goto GpioStepper3In_2Error;
 	}
 
 	/* GPIO Stepper3In_3 init */
-	if(gpio_request(Stepper3In_3, "rpi-gpio-Stepper3In_3")) {
+	if(gpio_request(stepperZPins[2], "rpi-gpio-Stepper3In_3")) {
 		printk("Can not allocate GPIO Stepper3In_3\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper3In_3, 0)) {
+	if(gpio_direction_output(stepperZPins[2], 0)) {
 		printk("Can not set GPIO Stepper3In_3 to output!\n");
 		goto GpioStepper3In_3Error;
 	}
 
 	/* GPIO Stepper3In_4 init */
-	if(gpio_request(Stepper3In_4, "rpi-gpio-Stepper3In_4")) {
+	if(gpio_request(stepperZPins[3], "rpi-gpio-Stepper3In_4")) {
 		printk("Can not allocate GPIO Stepper3In_4\n");
 		goto AddError;
 	}
-	if(gpio_direction_output(Stepper3In_4, 0)) {
+	if(gpio_direction_output(stepperZPins[3], 0)) {
 		printk("Can not set GPIO Stepper3In_4 to output!\n");
 		goto GpioStepper3In_4Error;
 	}
@@ -419,40 +437,40 @@ static int __init ModuleInit(void) {
 /*___________________________GPIO REQUEST ERROR HANDLER_____________________________*/
 	
 GpioStepper1In_1Error: 
-	gpio_free(Stepper1In_1);
+	gpio_free(stepperYPins[0]);
 
 GpioStepper1In_2Error:
-	gpio_free(Stepper1In_2);
+	gpio_free(stepperYPins[1]);
 
 GpioStepper1In_3Error:
-	gpio_free(Stepper1In_3);
+	gpio_free(stepperYPins[2]);
 
 GpioStepper1In_4Error:
-	gpio_free(Stepper1In_4);
+	gpio_free(stepperYPins[3]);
 
 GpioStepper2In_1Error:
-	gpio_free(Stepper2In_1);
+	gpio_free(stepperXPins[0]);
 
 GpioStepper2In_2Error:
-	gpio_free(Stepper2In_2);
+	gpio_free(stepperXPins[1]);
 
 GpioStepper2In_3Error:
-	gpio_free(Stepper2In_3);
+	gpio_free(stepperXPins[2]);
 
 GpioStepper2In_4Error:
-	gpio_free(Stepper2In_4);
+	gpio_free(stepperXPins[3]);
 
 GpioStepper3In_1Error:
-	gpio_free(Stepper3In_1);
+	gpio_free(stepperZPins[0]);
 
 GpioStepper3In_2Error:
-	gpio_free(Stepper3In_2);
+	gpio_free(stepperZPins[1]);
 
 GpioStepper3In_3Error:
-	gpio_free(Stepper3In_3);
+	gpio_free(stepperZPins[2]);
 
 GpioStepper3In_4Error:
-	gpio_free(Stepper3In_4);
+	gpio_free(stepperZPins[3]);
 
 GpioPickerError:
 	gpio_free(Picker);
@@ -479,20 +497,20 @@ static void __exit ModuleExit(void) {
 	gpio_set_value(4, 0);
 	
 	
-	gpio_free(Stepper1In_1);
-	gpio_free(Stepper1In_2);
-	gpio_free(Stepper1In_3);
-	gpio_free(Stepper1In_4);
+	gpio_free(stepperYPins[0]);
+	gpio_free(stepperYPins[1]);
+	gpio_free(stepperYPins[2]);
+	gpio_free(stepperYPins[3]);
 	
-	gpio_free(Stepper2In_1);
-	gpio_free(Stepper2In_2);
-	gpio_free(Stepper2In_3);
-	gpio_free(Stepper2In_4);
+	gpio_free(stepperXPins[0]);
+	gpio_free(stepperXPins[1]);
+	gpio_free(stepperXPins[2]);
+	gpio_free(stepperXPins[3]);
 	
-	gpio_free(Stepper3In_1);
-	gpio_free(Stepper3In_2);
-	gpio_free(Stepper3In_3);
-	gpio_free(Stepper3In_4);
+	gpio_free(stepperZPins[0]);
+	gpio_free(stepperZPins[1]);
+	gpio_free(stepperZPins[2]);
+	gpio_free(stepperZPins[3]);
 	
 	gpio_free(Picker);
 	
